@@ -1,0 +1,769 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+	main.xml file of TreadLight Timer v1.90. All code written solely by Jasmine Davis (Wellesley College, Class of 2017).
+		- code has undergone a complete overhaul: 3 times since presenting at UIST in early October
+	
+	!!! System currently runs on minutes/seconds for purpose of UIST Student competition 
+	    demonstration purposes
+	!!! SYSTEM ALSO IS FOR SIMULATION MODE...AKA ALL THE APPLICATION.INVOKE METHODS ARE COMMENTED OUT
+	  	
+	!!! IT WORKS. THE FLASHING LIGHTS WORK. As of 11/10/14 IT WORKS. (something I tried to do 
+		for UIST but was unnable to)
+	
+	!!! timer border changes with LED light colors now 11/26/14
+		
+	!!! METHODS ARE MADE AND BEING CALLED AS OF 12/1/14
+	
+	!!! Button is coded but appars to be an hardware issue...Autmatically reads first call then
+		gets no other input. I don't even know. I'm talking to Kinoma Support forum about this.
+			- I mentioned an odd reoccuring problem I've been having with our Kinoma and the Support
+		       team said our Kinoma might be defective and need to be replaced >.>	
+		
+	!!! CAN NOW HAVE UP TO TWO TIMERS. Switching and reseting and all that works fine
+		as of 12/8/2014 @ 3:45AM
+			- the only bug (if that's what you want to call it) in this portion of the 
+			  code is that after switching, the new timer appears as DONE in the blue
+			  timer container. It's a result of the deincrimating code. Consider ways to fix.
+			- also don't touch the second timer because the space is active and it kind of doesn't know 
+			  what to do if you hit it before the second time is technically implemented
+		
+	TO DO LIST as of 12/8/14 @ 4:00AM :
+		... do something about mass of variables if possible
+		... would it be possible to use a linked list or something for more than two timers? 
+		... think about way to fix one slight bug in current method of multiple (as in two) timers
+		... GO THROUGH AND COMMENT EXPLANATIONS IN WHEN NEEDED AS WELL AS REMOVE COMMENTED OUT CODE THAT ISN'T NEEDED
+	
+	!!! Code keeps corrupting (for lack of a better way to put it) when a // comment is added in before start of most handlers
+-->
+
+<program xmlns="http://www.kinoma.com/kpr/1">
+  
+<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- ASSETS -->
+<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+	
+	<skin id="mainSkin" color="#F0F0F0"/>
+	<skin id="buttonSkin" color="#f3f3f3"/>
+	<skin id="buttonSkinPressed" color="#c0c0c0"/> 
+	
+	//Skins for Start button
+	<skin id="startButtonSkin" color="red"/>
+	<skin id="startButtonSkinPressed" color="#990000"/>
+	<skin id="darkRedFrameSkin"> //for start button outline
+		<borders left="2" top="2" right="2" bottom="2" color="#990000"/>
+	</skin>
+	
+	//Skin for Add time buttons
+	<skin id="greenFrameSkin"> //time add button skin
+		<borders left="2" top="2" right="2" bottom="2" color="green"/>
+	</skin>
+	
+	//Skins for main timer
+	<skin id="blueSkin" color="blue"> //default skin
+		<borders left="2" top="2" right="2" bottom="2" color="blue"/>
+	</skin> 
+	<skin id="pauseHitSkin" color="#151B54"> //pause skin
+		 <borders left="2" top="2" right="2" bottom="2" color="blue"/>
+	</skin>
+	<skin id="purpleFrameSkin" color="blue"> //for purple timer skin
+		<borders left="3" top="3" right="3" bottom="3" color="#D0A9F5"/>
+	</skin>
+	<skin id="redFrameSkin" color="blue"> //for red timer border skin
+		<borders left="3" top="3" right="3" bottom="3" color="red"/>
+	</skin>
+	<skin id="whiteFrameSkin" color="blue"> //for flashing red timer border
+		<borders left="3" top="3" right="3" bottom="3" color="white"/>
+	</skin>
+	
+	//Skins for if main timer has been paused
+	<skin id="pausePurpleFrameSkin" color="#151B54"> //for purple timer skin
+		<borders left="3" top="3" right="3" bottom="3" color="#D0A9F5"/>
+	</skin>
+	<skin id="pauseRedFrameSkin" color="#151B54"> //for red timer border skin
+		<borders left="3" top="3" right="3" bottom="3" color="red"/>
+	</skin>
+	<skin id="pauseWhiteFrameSkin" color="#151B54"> //for flashing red timer border
+		<borders left="3" top="3" right="3" bottom="3" color="white"/>
+	</skin>
+	
+	//Skins for deactive timer
+	<skin id="grayFrameSkin"> //default for second timer display outline
+		<borders left="2" top="2" right="2" bottom="2" color="gray"/>
+	</skin>
+	<skin id="blueFrameSkinDeactive">
+		<borders left="2" top="2" right="2" bottom="2" color="blue"/>
+	</skin>
+	<skin id="purpleFrameSkinDeactive"> //for purple timer skin
+		<borders left="2" top="2" right="2" bottom="2" color="#D0A9F5"/>
+	</skin>
+	<skin id="redFrameSkinDeactive"> //for red timer border skin
+		<borders left="2" top="2" right="2" bottom="2" color="red"/>
+	</skin>
+	<skin id="whiteFrameSkinDeactive"> //for flashing red timer border
+		<borders left="2" top="2" right="2" bottom="2" color="white"/>
+	</skin>
+
+<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- STYLES --> //(text styles)
+<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++ -->			
+ 	
+ 	<style id="buttonStyle" font="bold 24px" color="black" 
+ 		align="center,middle"/>
+	<style id="timeStyle" color="white" 
+		font="bold 40px Helvetica, sans-serif"/> //style time is displayed in
+	<style id="startButtonStyle" font="bold 24px" color="white"
+		align="center,middle"/>
+	<style id="borderlessStyle" font="20px" color="black"
+		align="center,middle"/> 
+	<style id="plusTouchedStyle" font="bold 45px" color="black"
+		align="center,middle"/>
+		
+<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- HANDLERS -->
+<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+
+	<handler path="/delay">
+		<behavior><![CDATA[
+			function onInvoke( handler, message ) {
+				var query = parseQuery( message.query );
+				var duration = query.duration;
+				handler.wait( duration );
+			}
+		]]></behavior>
+	</handler>
+	
+	
+	<handler path="/activeTimerDisplay">
+		<behavior><![CDATA[
+			function onInvoke (handler, message) {
+				if (activeTimerCount <= -1) {
+					activeTimerString = 'DONE';
+					resetVar = true; 
+					trace('DONE...resetVar set to ' + resetVar + '\n');
+					timeOver = true;
+				} else if(activeTimerCount/60 >= 1) {
+					activeTimerHrs = parseInt((activeTimerCount/60),10); 
+					activeTimerMin = ( activeTimerCount - (activeTimerHrs*60));
+					trace('first if case of displaying time: timerHrs= ' +activeTimerHrs + ' timerMin= ' + activeTimerMin + '\n');
+					if(activeTimerMin == 0) {activeTimerString = (activeTimerHrs + ':00'); }
+					else if((activeTimerMin > 0) && (activeTimerMin < 10))
+						 { activeTimerString = (activeTimerHrs + ':0' + activeTimerMin); }
+					else { activeTimerString = (activeTimerHrs + ':' + activeTimerMin); }
+				} else if(activeTimerCount/60 < 1){
+					activeTimerHrs = 0;
+					activeTimerMin = activeTimerCount;
+					trace('second if case of displaying time: timerHrs=' + activeTimerHrs + ' timerMin=' + activeTimerMin + '\n');
+					if(activeTimerMin == 0) {activeTimerString = (activeTimerHrs + ':00'); }
+					else if((activeTimerMin > 0) && (activeTimerMin < 10))
+						{ activeTimerString = (activeTimerHrs + ':0' + activeTimerMin); }
+					else { activeTimerString = (activeTimerHrs + ':' + activeTimerMin); }
+				} else {
+					activeTimerString = ('Total Min Remaining: ' + activeTimerCount);
+					trace('else/base case of displaying time reached\n');
+				}
+			 }
+		]]></behavior>
+	</handler>
+	
+	//method for time display in deactive timer...it takes in and saves to global variables
+	//purpose: converts the deactive time which is saved in a number (ex: 72) to a time format (ex: 1:12) 
+	<handler path="/deactiveTimerDisplay">
+		<behavior><![CDATA[
+			function onInvoke (handler, message) {
+				if (deactiveTimerCount <= -1) {
+					deactiveTimerString = 'DONE';
+					trace('deactive DONE...resetVar is on ' + resetVar + '\n');
+					timeOver = true;
+				} else if(deactiveTimerCount/60 >= 1) {
+					deactiveTimerHrs = parseInt((deactiveTimerCount/60),10); 
+					deactiveTimerMin = ( deactiveTimerCount - (deactiveTimerHrs*60));
+					trace('deactive first if case of displaying time: timerHrs= ' + deactiveTimerHrs + ' timerMin= ' + deactiveTimerMin + '\n');
+					if(deactiveTimerMin == 0) {deactiveTimerString = (deactiveTimerHrs + ':00'); }
+					else if((deactiveTimerMin > 0) && (deactiveTimerMin < 10))
+						 { deactiveTimerString = (deactiveTimerHrs + ':0' + deactiveTimerMin); }
+					else { deactiveTimerString = (deactiveTimerHrs + ':' + deactiveTimerMin); }
+				} else if(deactiveTimerCount/60 < 1){
+					deactiveTimerHrs = 0;
+					deactiveTimerMin = deactiveTimerCount;
+					if(deactiveTimerMin == 0) {deactiveTimerString = (deactiveTimerHrs + ':00'); }
+					else if((deactiveTimerMin > 0) && (deactiveTimerMin < 10))
+						{ deactiveTimerString = (deactiveTimerHrs + ':0' + deactiveTimerMin); }
+					else { deactiveTimerString = (deactiveTimerHrs + ':' + deactiveTimerMin); }
+				} else {
+					deactiveTimerString = ('Total Min Remaining: ' + deactiveTimerCount);
+					trace('deactive else/base case of displaying time reached\n');
+				}
+			 }
+		]]></behavior>
+	</handler>
+	
+	
+	<handler path="/lightFunctionality">
+		<behavior><![CDATA[
+			function onInvoke (handler, message) {
+				if (startHit) {
+					if (totalTime == -1 ) { //for start of program case so no lights are on
+						application.invoke(new MessageWithObject("pins:/light/turnOff"));
+						trace('all lights off :: \n');
+					} else if (activeTimerCount > (totalTime*0.5)) { //if more than half of time is left
+						application.invoke(new MessageWithObject("pins:/light/blueTurnOn"));
+						application.invoke(new MessageWithObject("pins:/light/redTurnOff"));
+						application.invoke(new MessageWithObject("pins:/light/purpleTurnOff"));
+						if (!pauseVar) {timerSkin = blueSkin;} else { timerSkin = pauseHitSkin; } //clause for if pause has been hit
+						timerSkin = blueSkin;
+						//trace('blue lights on, r/p off :: \n');
+					} else if ( (activeTimerCount>(totalTime*0.25)) && (activeTimerCount<=(totalTime*0.5)) ) {
+					// if between half of time and a quarter of total time is left
+						application.invoke(new MessageWithObject("pins:/light/purpleTurnOn"));
+						//trace('purple lights on, b/r off :: \n');
+						application.invoke(new MessageWithObject("pins:/light/blueTurnOff"));
+						application.invoke(new MessageWithObject("pins:/light/redTurnOff"));
+						if (!pauseVar) { timerSkin = purpleFrameSkin; } else { timerSkin = pausePurpleFrameSkin; } //clause for if pause has been hit
+						timerSkin = purpleFrameSkin;
+					} else if ( (activeTimerCount<=(totalTime*0.25)) ) { //if less than a quarter of the total time is left
+						application.invoke(new MessageWithObject("pins:/light/redTurnOn"));
+						//trace('red lights on, b/p off :: \n');
+						application.invoke(new MessageWithObject("pins:/light/purpleTurnOff"));
+						application.invoke(new MessageWithObject("pins:/light/blueTurnOff"));
+						if (!pauseVar) { timerSkin = redFrameSkin; } else { timerSkin = pauseRedFrameSkin; } //clause for if pause has been hit
+						timerSkin = redFrameSkin;
+						//BELOW IS FLASHING RED LIGHT CODE
+						if (timeOver) {
+							application.invoke(new Message("/flashRedLight"));
+						 }					 
+					} else {
+						trace('default case of all light functionality reached...all lights off');
+						application.invoke(new MessageWithObject("pins:/light/turnOff"));
+					}
+				}
+			}
+		]]></behavior>
+	</handler>
+	
+	<handler path="/flashRedLight">
+		<behavior><![CDATA[
+			function onInvoke (handler, message) {
+				if (!flashRed) { 
+					//trace('flash off :: ');
+					application.invoke(new MessageWithObject("pins:/light/redTurnOff"));
+					application.invoke(new MessageWithObject("pins:/light/purpleTurnOff"));
+					application.invoke(new MessageWithObject("pins:/light/blueTurnOff"));
+					if (!pauseVar) { timerSkin = whiteFrameSkin; } else { timerSkin = pauseWhiteFrameSkin; } //pause skin clause
+					timerSkin = whiteFrameSkin;
+					flashRed = !flashRed;
+				} else { 
+					//trace('flash on :: ');
+					application.invoke(new MessageWithObject("pins:/light/redTurnOn"));
+					application.invoke(new MessageWithObject("pins:/light/purpleTurnOff"));
+					application.invoke(new MessageWithObject("pins:/light/blueTurnOff"));
+					if (!pauseVar) { timerSkin = redFrameSkin; } else { timerSkin = pauseRedFrameSkin; } //pause skin clause
+					timerSkin = redFrameSkin;
+					flashRed = !flashRed; 
+				}
+			}
+		]]></behavior>
+	</handler>
+	
+	<handler path="/deactiveLightBorder">
+		<behavior><![CDATA[
+			function onInvoke (handler, message) {
+					if (totalTime == -1 ) { //for start of program case so no lights are on
+							//base case of some sort that will probably have to be edited
+					} else if (deactiveTimerCount > (deactiveTotalTime*0.5)) {
+						deactiveTimerSkin = blueFrameSkinDeactive;
+						//trace('blue border on, r/p off :: \n');
+					} else if ( (deactiveTimerCount>(deactiveTotalTime*0.25)) && (deactiveTimerCount<=(deactiveTotalTime*0.5)) ) {
+						//trace('purple border on, b/r off :: \n');
+						deactiveTimerSkin = purpleFrameSkinDeactive;
+					} else if ( (deactiveTimerCount<=(deactiveTotalTime*0.25)) )  {
+						//trace('red border on, b/p off :: \n');
+						deactiveTimerSkin = redFrameSkinDeactive;
+						//BELOW IS FLASHING RED border CODE
+						if (deactiveTimeOver) {
+							//no method written for deactive light flashing but is just transfered below
+							if (!deactiveFlashRed) { 
+								deactiveTimerSkin = whiteFrameSkinDeactive;
+								deactiveFlashRed = !deactiveFlashRed;
+							} else { 
+								deactiveTimerSkin = redFrameSkinDeactive;
+								deactiveFlashRed = !deactiveFlashRed; 
+							}
+						 }					 
+					} else {
+						trace('default case of all light functionality reached...all lights off');
+						deactiveTimerSkin = grayFrameSkin;
+					}
+			}
+		]]></behavior>
+	</handler>
+	
+	<handler path="/startHit">
+		<behavior><![CDATA[
+			function onInvoke (handler, message) {
+			//trace(startHit);
+				if (!resetVar) { //if resetVar == false and start has been hit
+			  		 startHit = true;
+			   		//trace('Start button hit? (t/f) ' + startHit + '\n');
+			   		totalTime = activeTimerCount;
+			   		startText = 'Reset';
+			   		resetVar = true;
+			  		//trace('resetVar is: ' + resetVar + '\n');
+				 } else { //if resetVar == true and start hasn't been hit
+				    totalTime = -1;
+					activeTimerCount = 0;
+					startHit = false;
+			 	  	//trace('Start button hit? (t/f) ' + startHit + '\n');
+				    startText = 'Start';
+			 	    resetVar = false;
+			 	    //trace('resetVar is: ' + resetVar + '\n');
+			 	    timeOver = false;
+		    	}
+		    }
+		]]></behavior>
+	</handler>
+	
+	<!-- UNCOMMENT BELOW SECTION OF CODE FOR BUTTON TESTING/USE -->
+	<!-- <handler path="/gotButtonResult">
+   	<behavior>
+           <method id="onInvoke" params="handler, message"><![CDATA[   
+           	/* This handler recieves repeated messages from the read 
+           	   method defined in the bll (button.js). Use the return
+           	   message's requestObject to access the read result. */  
+           	            
+                var readResult = message.requestObject;  
+                trace(message.requestObject + '\n');          
+                if ( readResult == 1 ) {               
+                   application.distribute( "clicked" );
+                   
+                   if (startSkin == startButtonSkin) {
+                   		startSkin = startButtonSkinPressed;
+                	} else { startSkin = startButtonSkin; }
+               }     
+               trace('button reader called :: readResult = ' + readResult + '\n');          
+           ]]></method>
+       </behavior>      
+   </handler> -->
+
+<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- LAYOUTS -->
+<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+
+	<container id="borderlessContainer" width="40" height="50" left="180"/>
+	<container id="borderlessTimerContainer" width="67" height="30" left="181" bottom="62"/>
+	<container id="TimerContainer" width="179" height="60"/>
+	<container id="addTimeContainer" width="60" height="50" left="1" right="1"/>
+	<container id="startButton" width="100" height="50" top="65" right="40" />
+	
+	<container id="MainContainer" left="0" right="0" top="0" bottom="0" skin="mainSkin" active="true"> 
+		<column top="0" bottom="0">
+
+		<!-- NOT FULLY IMPLEMENTED______MIN/HR switch button container and line-->
+		<!-- <container like="borderlessContainer" skin="buttonSkin" active="true">
+				<label top="0" left="0" bottom="0" right="0" string="'MIN:SEC'" style="buttonStyle"/> 
+					
+				<behavior>
+               		<method id="onTouchBegan" params="container, id, x, y, ticks"><![CDATA[
+                	   container.skin = buttonSkinPressed;
+                    	trace('touch received on time change button\n');
+                    	
+						if (timerInMins && !resetVar) { //if timer is in mins and only possible if start isn't pressed aka resetVar = false
+                    		timerInMins = false;
+                   			timerInHrs = true;
+                   			container.first.string = 'HR:MIN';
+                   			timerDuration = hrsDuration;
+                   			//timerChange = true;
+                   			trace('timerDuration: ' + timerDuration + '\n');
+                  		 	trace('timer changed to HRS...should display HRS:MIN\n');  
+                   		} else if (timerInHrs && !resetVar) { //if timer is in hrs and only possible if start isn't pressed aka resetVar = false
+        	           		timerInHrs = false;
+        	           		timerInMins = true;
+        	           		container.first.string = 'MIN:SEC';
+        	           		timerDuration = minDuration;
+         	          		//timerChange = true;
+         	          		trace('timerDuration: ' + timerDuration + '\n');
+                	   		trace('timer changed to MINS...should display MIN:SEC\n');    
+                	   } else {
+							container.first.string ='';
+							trace ('timer change base case reached');
+                	   	}
+               	]]></method>
+               
+				<method id="onTouchEnded" params="container, id, x, y, ticks"><![CDATA[
+                  	 container.skin = buttonSkin;	                      
+              	 ]]></method>
+           </behavior>   
+
+					<content left="0" right="0" top="0" bottom="0" skin="greenFrameSkin"/>
+				</container> -->
+				<!-- end of MIN/HR switch container Button and line-->
+		
+			<line top="0" bottom="0">
+				<!-- TIMER (BLUE SKIN)-->
+				<container like="TimerContainer" right="0" skin="blueSkin" active="true">
+					<label top="5" left="5" bottom="5" right="5" string="'0:00'" style="timeStyle"/> 
+					<behavior>
+						<method id="onCreate" params="container, data"><![CDATA[
+							container.duration = timerDuration;
+							container.first.string = 'min:sec';
+							container.start();
+						]]></method>	
+						<method id="onFinished" params="container"><![CDATA[
+							//TIMER COUNTDOWN CODE
+							application.invoke(new Message("/activeTimerDisplay"));
+							container.first.string = activeTimerString;
+							container.skin = timerSkin;
+							
+							// LIGHT FUNCTIONALITY CODE
+							application.invoke(new Message("/lightFunctionality"));
+									
+							//starting and stopping timer if statement
+							if(startHit && !pauseVar) {
+								//trace('Start button pressed...decreasing time\n');			
+						   		activeTimerCount--;
+						   		
+						   		if (activeTimerCount <= -1) {
+						   			activeTimerString = 'DONE';
+						   			timeOver = true;
+						   			//trace('looping in start/pause if statement?\n');
+						   		}
+						  	}
+						  	
+						  	if (timerAdded) { //if second timer has been added then also detracts from deactive timer
+						  		deactiveTimerCount--;
+						  		if (deactiveTimerCount <= -1) {
+						   				deactiveTimerString = 'DONE';
+						   				deactiveTimeOver = true;
+						   				//trace('looping in start/pause if statement?\n');
+						   		}
+						   	}
+						   	
+							container.time = 0; //resets containers counter to 0
+							container.start(); //starts counter all over again
+						]]></method>	
+						
+						<!-- Pause Code -->
+						<method id="onTouchBegan" params="container, id, x, y, ticks"><![CDATA[
+		                    if(pauseVar) { //timer hit so pause is true...pause would be true if it is possible to pause
+		                    	//container.skin = blueSkin;
+		                    	pauseVar = !pauseVar;
+		                    	trace('pause hit, timer started\n');
+		                    } else { //if pauseVar is false...aka pause hasn't been hit
+		                    	//container.skin = pauseHitSkin;
+		                    	pauseVar = !pauseVar;
+		                    	trace('pause hit, timer stopped\n');
+		                    }            
+		               ]]></method>
+		               <method id="onTouchEnded" params="container, id, x, y, ticks"><![CDATA[
+		                  //nothing happens on touch ended
+		               ]]></method>
+						<!-- END OF Pause Code -->
+						
+					</behavior>
+					
+				
+				<!-- ADD TIMER CODE -->	
+				<container like="borderlessContainer" skin="buttonSkin" active="true" style="borderlessStyle">
+					<label top="0" left="0" bottom="0" right="0" 
+           				string="'+'" style="plusTouchedStyle"/> 
+           			<behavior>
+		               <method id="onTouchBegan" params="container, id, x, y, ticks"><![CDATA[
+		                   //trace('plus touched! timer added!\n');
+		                   deactiveTimerCount = 0; //resetting second timer count
+		                   timerCount = activeTimerCount; //saves activeTimerCount in placeholder
+		                   activeTimerCount = deactiveTimerCount; //sets the deactive timer as the active one
+		                   deactiveTimerCount = timerCount; //sets old active timer as new deactive timer
+		                   deactiveTotalTime = totalTime; //saving the old active total time in the deactive total time slot
+		                   totalTime = 0; //resetting the totalTime in preparation for new timer
+		                   timerAdded = true;
+		                   
+		                   if (timerAdded) { //once timer has been added '+' is made invisible to make clear another can't be added
+							 container.visible = false;
+		                   }
+		               ]]></method>
+		               
+		               <method id="onTouchEnded" params="container, id, x, y, ticks"><![CDATA[
+		                   //nothing happens on touch ended
+		               ]]></method>
+           			</behavior>	
+				</container>
+				<!-- END ADD TIMER PLUS CONTAINER -->
+				
+				<!-- SECOND TIMER DISPLAY CODE -->	
+				<container like="borderlessTimerContainer" skin="deactiveTimerSkin" active="true" style="borderlessStyle">
+					<label top="0" left="0" bottom="0" right="0" 
+           				string="''" style="borderlessStyle"/> 
+           			<behavior>
+           				<method id="onCreate" params="container, id, x, y, ticks"><![CDATA[
+           				//on creation of this container it sets the timer duration, display string, and starts the internal container timer
+           					container.duration = timerDuration;
+							container.first.string = 'min:sec';
+							container.start();
+           				]]></method>
+           				<method id="onFinished" params="container"><![CDATA[
+           					application.invoke(new Message("/deactiveTimerDisplay"));
+           					if (timerAdded) { //only displays second timer if its been added
+           						container.first.string = deactiveTimerString;
+           						container.skin = deactiveTimerSkin;
+           						//trace('deactiveTimerString: ' + deactiveTimerString +'\n');
+           						application.invoke(new Message("/deactiveLightBorder"));
+           					}
+           					container.time = 0;
+							container.start();
+           				]]></method>
+           				
+		                <method id="onTouchBegan" params="container, id, x, y, ticks"><![CDATA[
+		                   //trace('second timer display touched!... switching timers!\n');
+		                   //on touch this switches the active and deactive timers 
+		             			timerCount = deactiveTimerCount; //saves deactiveTimerCount in placeholder
+		             			deactiveTimerCount = activeTimerCount;//sets the active timer as the deactive one
+		             			activeTimerCount = timerCount; //sets active timer as old deactive timer
+		             			holderTotalTime = deactiveTotalTime; //above process is repeated for totalTime
+		             			deactiveTotalTime = totalTime;
+		             			totalTime = holderTotalTime;
+		             	]]></method>
+		               
+		               <method id="onTouchEnded" params="container, id, x, y, ticks"><![CDATA[
+		                   //nothing happens on touch ended
+		               ]]></method>
+           			</behavior>	
+				</container>
+				<!-- END SECOND TIMER DISPLAY CODE -->
+
+			<!-- Start Button -->
+				<container like="startButton" skin="startButtonSkin" active="true">
+					<label top="0" left="0" bottom="0" right="0" 
+           				string="'Start'" style="startButtonStyle"/> 
+					
+					<behavior>
+		               <method id="onTouchBegan" params="container, id, x, y, ticks"><![CDATA[
+		                   container.skin = startButtonSkinPressed;
+		                   container.first.string = startText;
+		                   application.invoke(new Message("/startHit"));          
+		               ]]></method>
+		               
+		               <method id="onTouchEnded" params="container, id, x, y, ticks"><![CDATA[
+		                   container.skin = startButtonSkin;
+		                   container.first.string = startText;
+		               ]]></method>
+		               
+		               //UNCOMMENT BELOW CODE WHEN BUTTON IS BEING USED
+		              <!-- <method id="clicked" params="container"><![CDATA[
+              			 //When button clicked, start timer
+              			 trace('BUTTON CLICKED\n ');
+              			 container.first.string = startText;
+              			 container.skin = startSkin;
+              			 application.invoke(new Message("/startHit"));
+              			 //resetVar = !resetVar;
+              			 //startHit = !startHit;
+         			  ]]></method> -->
+         			  
+           		</behavior>   
+           		
+					<content left="0" right="0" top="0" bottom="0" skin="darkRedFrameSkin"/>
+				</container> 
+			  <!-- end of start button container -->
+				
+				
+			</container> <!-- end of blue timer container -->
+			</line>
+			
+			<!-- Below line contains add time buttons -->
+			<line top="0" bottom="0">
+			<!-- +1 Button-->
+				  <container like="addTimeContainer" right="0" skin="buttonSkin" active="true">
+					<label top="0" left="0" bottom="0" right="0" 
+           	string="'+1'" style="buttonStyle"/> 
+					
+					<behavior>
+               <method id="onTouchBegan" params="container, id, x, y, ticks"><![CDATA[
+                   container.skin = buttonSkinPressed;
+                   activeTimerCount += 1;  
+                   trace('timerCount= ' + activeTimerCount + '\n');               
+               ]]></method>
+               
+               <method id="onTouchEnded" params="container, id, x, y, ticks"><![CDATA[
+                   container.skin = buttonSkin;	                      
+               ]]></method>
+           </behavior>   
+
+					<content left="0" right="0" top="0" bottom="0" skin="greenFrameSkin"/>
+				</container>
+			
+			<!-- +5 Button-->
+				  <container like="addTimeContainer" right="0" skin="buttonSkin" active="true">
+					<label top="0" left="0" bottom="0" right="0" 
+           	string="'+5'" style="buttonStyle"/> 
+					
+					<behavior>
+               <method id="onTouchBegan" params="container, id, x, y, ticks"><![CDATA[
+                   container.skin = buttonSkinPressed;
+                   activeTimerCount += 5;
+                   trace('timerCount= ' + activeTimerCount + '\n');              
+               ]]></method>
+               
+               <method id="onTouchEnded" params="container, id, x, y, ticks"><![CDATA[
+                   container.skin = buttonSkin;	                      
+               ]]></method>
+           </behavior>   
+
+					<content left="0" right="0" top="0" bottom="0" skin="greenFrameSkin"/>
+				</container>
+			
+			<!-- +10 Button-->
+				  <container like="addTimeContainer" right="0" skin="buttonSkin" active="true">
+					<label top="0" left="0" bottom="0" right="0" 
+           	string="'+10'" style="buttonStyle"/> 
+					
+					<behavior>
+               <method id="onTouchBegan" params="container, id, x, y, ticks"><![CDATA[
+                   container.skin = buttonSkinPressed;
+                   activeTimerCount += 10;
+                   trace('timerCount= ' + activeTimerCount + '\n');                
+               ]]></method>
+               
+               <method id="onTouchEnded" params="container, id, x, y, ticks"><![CDATA[
+                   container.skin = buttonSkin;	                      
+               ]]></method>
+           </behavior>   
+
+					<content left="0" right="0" top="0" bottom="0" skin="greenFrameSkin"/>
+				</container>
+			
+			<!-- +15 Button-->
+				  <container like="addTimeContainer" right="0" skin="buttonSkin" active="true">
+					<label top="0" left="0" bottom="0" right="0" 
+           	string="'+15'" style="buttonStyle"/> 
+					
+					<behavior>
+               <method id="onTouchBegan" params="container, id, x, y, ticks"><![CDATA[
+                   container.skin = buttonSkinPressed;
+                   activeTimerCount += 15;
+                   trace('timerCount= ' + activeTimerCount + '\n');                
+               ]]></method>
+               
+               <method id="onTouchEnded" params="container, id, x, y, ticks"><![CDATA[
+                   container.skin = buttonSkin;	                      
+               ]]></method>
+           </behavior>   
+
+					<content left="0" right="0" top="0" bottom="0" skin="greenFrameSkin"/>
+				</container>
+			
+			<!-- +60 Button-->
+				  <container like="addTimeContainer" right="0" skin="buttonSkin" active="true">
+					<label top="0" left="0" bottom="0" right="0" 
+           	string="'+60'" style="buttonStyle"/> 
+					
+					<behavior>
+               <method id="onTouchBegan" params="container, id, x, y, ticks"><![CDATA[
+                   container.skin = buttonSkinPressed;
+                   activeTimerCount += 60;
+                   trace('timerCount= ' + activeTimerCount + '\n');                
+               ]]></method>
+               
+               <method id="onTouchEnded" params="container, id, x, y, ticks"><![CDATA[
+                   container.skin = buttonSkin;	                      
+               ]]></method>
+           </behavior>   
+
+					<content left="0" right="0" top="0" bottom="0" skin="greenFrameSkin"/>
+				</container>
+			
+			</line>
+		
+		</column>
+	
+	</container>
+
+<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++ -->
+<!-- SCRIPT -->
+<!-- ++++++++++++++++++++++++++++++++++++++++++++++++++ --> 
+  
+   <script>
+       <![CDATA[
+       
+       /* Create message for communication with hardware pins.
+   	   button: name of pins object, will use later for calling 'button' methods.
+   	   require: name of js or xml bll file.
+   	   pins: initializes 'button' (matches 'button' object in the bll)
+   	  	   	 with the given pin numbers. Pin types and directions
+   	  		 are set within the bll.	*/  
+       /* Create message for communication with hardware pins.
+   	  light: name of pins object, will use later for calling 'light' methods.
+   	  require: name of js or xml bll file.
+   	  pins: initializes 'led' (matches 'led' object in the bll)
+   	  		with the given pin numbers. Pin types and directions
+   	  		are set within the bll. */
+		application.invoke(new MessageWithObject( "pins:configure", {
+		     light: {
+		       require: "led",
+		       pins: {
+		           redLed: {pin: 65},
+		           purpleLed: {pin: 59},
+		           blueLed: {pin: 51},
+		       }
+		  	 },
+		   
+		   //MUST UNCOMMENT BELOW FOR BUTTON USE
+			/*button: {
+               require: "button",
+               pins: {
+                   button: { pin: 57 },
+               }
+          	 } */
+		 })); 
+		
+		//MUST UNCOMMENT BELOW FOR BUTTON USE
+		/* Use the initialized button object and repeatedly 
+   	   call its read method with a given interval.  */
+    	/*application.invoke( new MessageWithObject( "pins:/button/read?" + 
+           serializeQuery( {       
+				repeat: "on",
+				interval: 20,
+				callback: "/gotButtonResult"
+      	 })));*/
+      	// BELOW LINE OF CODE IS JUST ANOTHER WAY OF SAYING THE ABOVE
+      	// application.invoke( new MessageWithObject("pins:/button/read?repeat=on&callback=/gotButtonResult&interval=20"));
+         
+         /* Global Variables */
+        var pauseVar = false; //keep track of if pause has been hit or not
+		var resetVar = false; //keep track of if reset is possible (only possible if timer has been started)
+		var startHit = false; //keeps track of if start button as been hit
+		var totalTime = -1; //variable used to turn lights on and off of active timer
+		var timeOver = false; //this works for active timer 
+		var deactiveTimeOver = false; //works for deactive timer
+		var flashRed = false; 
+		var deactiveFlashRed = false;
+		//var timerInHrs = false; //used in HR/MIN switching code that isn't fully implemented
+		//var timerInMins = true; //used in HR/MIN switching code that isn't fully implemented
+		//var timerChange = false; //used in HR/MIN switching code that isn't fully implemented
+		var activeTimerString = "0:00";
+		var deactiveTimerString = "";
+		var startText = 'Start';
+		var timerSkin = blueSkin; //default timer skin...made into variable to allow internal switching
+		var startSkin = startButtonSkin; //fur use with button
+		
+		//below variables for timer duration
+		var minDuration = 750; //roughly a second
+		//var hrsDuration = 60000; //60000 milliseconds in a minute
+		var timerDuration = minDuration; //setting timerDuration to minDuration (seconds)
+		
+		//variables for different timers
+		var timerAdded = false; //keeps track of if (second) timer has been added)
+		var timerCount = 0; //place holder for timer count in timer switching code
+		var holderTotalTime = 0; //holder for total time used when switching timers 
+		var deactiveTimerCount = 0; //total time for deactive timer
+		var activeTimerCount = 0; //total time for active timer
+		var activeTimerHrs = 0; //var used during active timer display calculation
+		var activeTimerMin = 0; //var used during active timer display calculation
+		var deactiveTimerHrs = 0; //var used during deactive timer display calculation
+		var deactiveTimerMin = 0; //var used during deactive timer display calculation
+		var deactiveTimerSkin = grayFrameSkin; //setting default deactive timer skin to gray frame
+		var deactiveTotalTime = -1; //-1 sets it automatically to DONE...something to consider later
+		
+		/* Start application */			
+      	var main = new MainContainer();
+       application.add( main ); 
+            
+       ]]></script>
+</program>
